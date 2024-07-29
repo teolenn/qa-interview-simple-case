@@ -7,23 +7,27 @@ test.describe('login form tests', () => {
   test('logging in works with existing account', async ({ page }) => {
     await page.goto('localhost:8080/login')
 
+    // Make sure we are at the expected page with the correct heading
+    await expect(
+      page.getByRole('heading', { name: 'Strawberry QA', exact: true }),
+    ).toBeVisible()
+
     const existingUser = existingUsers[0]
 
+    // Using pages build in getByLabel instead of navigating by classes that easily can be changed for other reasons than what will interrupt main functionality.
+    await page.getByLabel('Email').fill(existingUser.email)
     await page
-      .locator('#root form div:nth-child(1) > div > input')
-      .pressSequentially(existingUser.email)
+      .getByLabel('Password', { exact: true })
+      .fill(existingUser.password)
 
-    await page
-      .locator('#root form div:nth-child(2) > div > input')
-      .pressSequentially(existingUser.password)
+    // Make sure the element has a role button, to avoid conflicting with other potential elements with the text 'Login'
+    const loginButton = page.getByRole('button').and(page.getByText('Login'))
+    loginButton.click()
 
-    // Submit button
-    const button = page.locator('form .MuiButton-sizeMedium')
-    // Click on the button
-    button.click()
+    // Removing timeout to remove flakiness - instead using built-in waiting mechanism in Playwright that runs before click.
+    // This is a time saver: Timeout leads to the elements ability to load before our hard wait has expired i.e. wasted time
 
-    // Wait for 1 second until page is fully loaded
-    await page.waitForTimeout(1000)
-    await expect(page.getByText('Log out')).toBeVisible()
+    const logoutButton = page.getByRole('button').and(page.getByText('Log out'))
+    await expect(logoutButton).toBeVisible()
   })
 })
